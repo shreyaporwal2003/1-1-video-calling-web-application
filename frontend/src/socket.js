@@ -1,6 +1,7 @@
 import { io } from "socket.io-client";
 
-// Use your laptop's local IP
-const socket = io("http://192.168.1.6:5000");
+const socket = io(import.meta.env.VITE_BACKEND_URL, {
+  transports: ["websocket"]
+});
 
 export default socket;
