@@ -8,7 +8,6 @@ export default function Call({ roomId, onEnd }) {
   const localStreamRef = useRef(null);
 
   const [state, setState] = useState("Waiting for other user…");
-  const [focusLocal, setFocusLocal] = useState(false);
   const [micOn, setMicOn] = useState(true);
   const [camOn, setCamOn] = useState(true);
 
@@ -22,37 +21,27 @@ export default function Call({ roomId, onEnd }) {
 
   /* -------- TOGGLE MIC -------- */
   const toggleMic = () => {
-    const audioTrack = localStreamRef.current
-      ?.getAudioTracks()[0];
-
+    const audioTrack = localStreamRef.current?.getAudioTracks()[0];
     if (!audioTrack) return;
-
     audioTrack.enabled = !audioTrack.enabled;
     setMicOn(audioTrack.enabled);
   };
 
   /* -------- TOGGLE CAMERA -------- */
   const toggleCam = () => {
-    const videoTrack = localStreamRef.current
-      ?.getVideoTracks()[0];
-
+    const videoTrack = localStreamRef.current?.getVideoTracks()[0];
     if (!videoTrack) return;
-
     videoTrack.enabled = !videoTrack.enabled;
     setCamOn(videoTrack.enabled);
   };
 
   /* -------- START CALL -------- */
   useEffect(() => {
-    let mounted = true;
-
     async function startCall() {
       const stream = await navigator.mediaDevices.getUserMedia({
         video: true,
         audio: true
       });
-
-      if (!mounted) return;
 
       localStreamRef.current = stream;
       localVideoRef.current.srcObject = stream;
@@ -85,7 +74,6 @@ export default function Call({ roomId, onEnd }) {
     startCall();
 
     return () => {
-      mounted = false;
       localStreamRef.current?.getTracks().forEach(t => t.stop());
       pcRef.current?.close();
     };
@@ -129,50 +117,65 @@ export default function Call({ roomId, onEnd }) {
 
   /* -------- UI -------- */
   return (
-    <div
-      className={`call-container ${focusLocal ? "focus-local" : ""}`}
-    >
+    <div className="call-container">
+      {/* ROOM ID BAR */}
+      <div
+        style={{
+          position: "absolute",
+          top: 12,
+          left: "50%",
+          transform: "translateX(-50%)",
+          background: "rgba(0,0,0,0.6)",
+          padding: "8px 14px",
+          borderRadius: "8px",
+          fontSize: "14px",
+          display: "flex",
+          gap: "8px",
+          alignItems: "center",
+          zIndex: 10
+        }}
+      >
+        <span>Room ID:</span>
+        <code>{roomId}</code>
+        <button
+          style={{ cursor: "pointer" }}
+          onClick={() => navigator.clipboard.writeText(roomId)}
+        >
+          Copy
+        </button>
+      </div>
+
+      {/* STATUS */}
       <div className="call-status">{state}</div>
 
-      {/* Remote video */}
+      {/* REMOTE VIDEO */}
       <video
         ref={remoteVideoRef}
         autoPlay
         playsInline
         className="remote-video"
-        onClick={() => setFocusLocal(false)}
       />
 
-      {/* Local video */}
+      {/* LOCAL VIDEO */}
       <video
         ref={localVideoRef}
         autoPlay
         muted
         playsInline
         className="local-video"
-        onClick={() => setFocusLocal(true)}
       />
 
-      {/* Controls */}
+      {/* CONTROLS */}
       <div className="controls">
-        <button
-          className={`control-btn ${!micOn ? "off" : ""}`}
-          onClick={toggleMic}
-        >
-          {micOn ? "Mic" : "Mic Off"}
+        <button className="control-btn" onClick={toggleMic}>
+          {micOn ? "Mic On" : "Mic Off"}
         </button>
 
-        <button
-          className={`control-btn ${!camOn ? "off" : ""}`}
-          onClick={toggleCam}
-        >
-          {camOn ? "Cam" : "Cam Off"}
+        <button className="control-btn" onClick={toggleCam}>
+          {camOn ? "Cam On" : "Cam Off"}
         </button>
 
-        <button
-          className="control-btn end-call"
-          onClick={handleEndCall}
-        >
+        <button className="control-btn end-call" onClick={handleEndCall}>
           End
         </button>
       </div>
