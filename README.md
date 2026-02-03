@@ -215,7 +215,7 @@ const PORT = process.env.PORT || 3001;
 ## 👨‍💻 Author
 
 **Your Name**
-- GitHub: [@yourusername](https://github.com/shreyaporwal2003)
+- GitHub: [@ShreyaPorwal](https://github.com/shreyaporwal2003)
 - Email: shreyaporwal167@gmail.com
 
 ## 🙏 Acknowledgments
