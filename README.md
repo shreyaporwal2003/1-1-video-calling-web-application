@@ -1,6 +1,6 @@
 # 🎥 WebRTC Video Call App
 
-A modern, real-time video calling application built with React and WebRTC, featuring a clean Google Meet-inspired interface.
+A modern, real-time video calling application built with React and WebRTC.
 
 ![Video Call Demo](https://img.shields.io/badge/React-18+-61DAFB?style=for-the-badge&logo=react&logoColor=white)
 ![WebRTC](https://img.shields.io/badge/WebRTC-Enabled-333333?style=for-the-badge&logo=webrtc&logoColor=white)
@@ -17,17 +17,7 @@ A modern, real-time video calling application built with React and WebRTC, featu
 - ⚡ **Low Latency** - Direct peer-to-peer connections for minimal delay
 - 🎯 **Easy to Use** - Simple, intuitive interface for quick video calls
 
-## 🚀 Demo
 
-[Live Demo Link](#) *(Add your deployment link here)*
-
-## 📸 Screenshots
-
-### Pre-Join Screen
-*(Add screenshot of pre-join page)*
-
-### Video Call Interface
-*(Add screenshot of active call)*
 
 ## 🛠️ Tech Stack
 
@@ -57,8 +47,8 @@ Before running this project, make sure you have:
 ### 1. Clone the repository
 
 ```bash
-git clone https://github.com/yourusername/webrtc-video-call.git
-cd webrtc-video-call
+git clone https://github.com/shreyaporwal2003/1-1-video-calling-web-application.git
+cd 1-1-video-calling-web-application
 ```
 
 ### 2. Install dependencies
@@ -140,7 +130,7 @@ webrtc-video-call/
 │   │   │   └── PreJoin.jsx    # Pre-join screen
 │   │   ├── App.jsx
 │   │   ├── socket.js          # Socket.io client config
-│   │   └── styles.css         # Global styles
+│   │   └── app.css         # Global styles
 │   └── package.json
 │
 ├── server/                 # Node.js backend
@@ -221,26 +211,12 @@ const PORT = process.env.PORT || 3001;
 - Reduce video resolution in getUserMedia constraints
 - Ensure CPU isn't overloaded
 
-## 🤝 Contributing
-
-Contributions are welcome! Please follow these steps:
-
-1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/AmazingFeature`)
-3. Commit your changes (`git commit -m 'Add some AmazingFeature'`)
-4. Push to the branch (`git push origin feature/AmazingFeature`)
-5. Open a Pull Request
-
-## 📝 License
-
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
 ## 👨‍💻 Author
 
 **Your Name**
-- GitHub: [@yourusername](https://github.com/yourusername)
-- LinkedIn: [Your LinkedIn](https://linkedin.com/in/yourprofile)
-- Email: your.email@example.com
+- GitHub: [@yourusername](https://github.com/shreyaporwal2003)
+- Email: shreyaporwal167@gmail.com
 
 ## 🙏 Acknowledgments
 
@@ -249,9 +225,6 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 - Google Meet for UI/UX inspiration
 - React community for excellent documentation
 
-## 📞 Support
-
-For support, email your.email@example.com or open an issue in the repository.
 
 ## 🔮 Future Enhancements
 
