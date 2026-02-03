@@ -29,7 +29,8 @@ A modern, real-time video calling application built with React and WebRTC.
 
 
 ### Video Call Interface
-*(Add screenshot of active call)*
+![Video Call Interface](frontend/Screenshot%202026-02-03%20153442.png)
+
 
 
 
