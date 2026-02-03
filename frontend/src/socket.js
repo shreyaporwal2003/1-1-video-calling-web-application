@@ -1,7 +1,9 @@
 import { io } from "socket.io-client";
 
-const socket = io(import.meta.env.VITE_BACKEND_URL, {
-  transports: ["websocket"]
+// Current laptop IP (for localhost + phone testing)
+const socket = io("http://10.108.143.140:5000", {
+  transports: ["websocket"],
+  reconnectionAttempts: 5
 });
 
 export default socket;

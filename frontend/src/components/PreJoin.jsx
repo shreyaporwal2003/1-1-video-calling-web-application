@@ -75,10 +75,10 @@ export default function PreJoin({ onCreate, onJoin }) {
         {/* Mic / Cam controls */}
         <div className="prejoin-controls">
           <button className="control-btn" onClick={toggleMic}>
-            {micOn ? "Mic On" : "Mic Off"}
+            {micOn ? "🔊" : "🔇"}
           </button>
           <button className="control-btn" onClick={toggleCam}>
-            {camOn ? "Cam On" : "Cam Off"}
+            {camOn ? "📸" : "📸 off"}
           </button>
         </div>
 

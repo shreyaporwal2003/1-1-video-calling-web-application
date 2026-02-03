@@ -10,6 +10,7 @@ export default function Call({ roomId, onEnd }) {
   const [state, setState] = useState("Waiting for other user…");
   const [micOn, setMicOn] = useState(true);
   const [camOn, setCamOn] = useState(true);
+  const [isLocalLarge, setIsLocalLarge] = useState(false); // Track which video is large
 
   /* -------- END CALL -------- */
   const handleEndCall = () => {
@@ -33,6 +34,11 @@ export default function Call({ roomId, onEnd }) {
     if (!videoTrack) return;
     videoTrack.enabled = !videoTrack.enabled;
     setCamOn(videoTrack.enabled);
+  };
+
+  /* -------- SWAP VIDEOS -------- */
+  const swapVideos = () => {
+    setIsLocalLarge(!isLocalLarge);
   };
 
   /* -------- START CALL -------- */
@@ -125,7 +131,7 @@ export default function Call({ roomId, onEnd }) {
           top: 12,
           left: "50%",
           transform: "translateX(-50%)",
-          background: "rgba(0,0,0,0.6)",
+          background: "rgba(249, 249, 249, 0.6)",
           padding: "8px 14px",
           borderRadius: "8px",
           fontSize: "14px",
@@ -148,31 +154,35 @@ export default function Call({ roomId, onEnd }) {
       {/* STATUS */}
       <div className="call-status">{state}</div>
 
-      {/* REMOTE VIDEO */}
+      {/* REMOTE VIDEO - Large or Small based on state */}
       <video
         ref={remoteVideoRef}
         autoPlay
         playsInline
-        className="remote-video"
+        className={isLocalLarge ? "local-video" : "remote-video"}
+        onClick={swapVideos}
+        style={{ cursor: "pointer" }}
       />
 
-      {/* LOCAL VIDEO */}
+      {/* LOCAL VIDEO - Small or Large based on state */}
       <video
         ref={localVideoRef}
         autoPlay
         muted
         playsInline
-        className="local-video"
+        className={isLocalLarge ? "remote-video" : "local-video"}
+        onClick={swapVideos}
+        style={{ cursor: "pointer" }}
       />
 
       {/* CONTROLS */}
       <div className="controls">
         <button className="control-btn" onClick={toggleMic}>
-          {micOn ? "Mic On" : "Mic Off"}
+          {micOn ? "🔊" : "🔇"}
         </button>
 
         <button className="control-btn" onClick={toggleCam}>
-          {camOn ? "Cam On" : "Cam Off"}
+          {camOn ? "📸" : "📸 off"}
         </button>
 
         <button className="control-btn end-call" onClick={handleEndCall}>
