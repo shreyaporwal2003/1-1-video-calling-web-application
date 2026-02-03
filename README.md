@@ -20,12 +20,13 @@ A modern, real-time video calling application built with React and WebRTC.
 
 ## 🚀 Demo
 
-[[Live Demo Link](https://1-1-video-calling-web-application.vercel.app/)](#) *(Add your deployment link here)*
+[[Live Demo Link](https://1-1-video-calling-web-application.vercel.app/)]
 
 ## 📸 Screenshots
 
 ### Pre-Join Screen
-*(frontend/Screenshot 2026-02-03 153424.png)*
+![Pre-Join Screen](frontend/Screenshot%202026-02-03%20153424.png)
+
 
 ### Video Call Interface
 *(Add screenshot of active call)*
