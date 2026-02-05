@@ -29,7 +29,7 @@ A modern, real-time video calling application built with React and WebRTC.
 
 
 ### Video Call Interface
--**Black screen appearing beacause the camera is turned off.
+Black screen appearing beacause the camera is turned off.
 ![Video Call Interface](frontend/Screenshot%202026-02-05%20161553.png)
 
 
