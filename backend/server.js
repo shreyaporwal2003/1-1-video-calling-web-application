@@ -12,46 +12,98 @@ app.use(cors());
 // Create HTTP server
 const server = http.createServer(app);
 
-// Attach Socket.IO
+// Attach Socket.IO with CORS config
 const io = new Server(server, {
   cors: {
-    origin: "*"
+    origin: "*",
+    methods: ["GET", "POST"]
   }
 });
 
-io.on("connection", socket => {
-  console.log("Connected:", socket.id);
+/*
+  Socket.IO Signaling Server Responsibilities:
+  - Manage room joining
+  - Limit room to 2 users (1-to-1 call)
+  - Relay WebRTC signaling messages (offer, answer, ICE)
+  - Handle call end & disconnect cleanly
+*/
 
-  socket.on("join-room", roomId => {
+io.on("connection", (socket) => {
+  console.log("✅ Connected:", socket.id);
+
+  /* --------------------------------------------------
+     JOIN ROOM LOGIC (MOST IMPORTANT PART)
+     -------------------------------------------------- */
+  socket.on("join-room", (roomId) => {
+    const room = io.sockets.adapter.rooms.get(roomId);
+    const numClients = room ? room.size : 0;
+
+    console.log(`📡 Room ${roomId} has ${numClients} user(s) before join`);
+
+    // ❌ Prevent more than 2 users in a 1-to-1 call
+    if (numClients >= 2) {
+      socket.emit("room-full");
+      return;
+    }
+
+    // Join the room
     socket.join(roomId);
-    socket.to(roomId).emit("peer-joined");
+
+    console.log(`➡️ ${socket.id} joined room ${roomId}`);
+
+    // ✅ Notify first user ONLY when second user joins
+    if (numClients === 1) {
+      socket.to(roomId).emit("peer-joined");
+      console.log("🤝 Peer joined event sent");
+    }
   });
 
-  socket.on("offer", data => {
-    socket.to(data.roomId).emit("offer", data.offer);
+  /* --------------------------------------------------
+     WEBRTC SIGNALING RELAY
+     -------------------------------------------------- */
+
+  // Forward offer to other peer
+  socket.on("offer", ({ roomId, offer }) => {
+    socket.to(roomId).emit("offer", offer);
   });
 
-  socket.on("answer", data => {
-    socket.to(data.roomId).emit("answer", data.answer);
+  // Forward answer to other peer
+  socket.on("answer", ({ roomId, answer }) => {
+    socket.to(roomId).emit("answer", answer);
   });
 
-  socket.on("ice-candidate", data => {
-    socket.to(data.roomId).emit("ice-candidate", data.candidate);
+  // Forward ICE candidates
+  socket.on("ice-candidate", ({ roomId, candidate }) => {
+    socket.to(roomId).emit("ice-candidate", candidate);
   });
 
-  socket.on("disconnect", () => {
-    socket.broadcast.emit("peer-left");
-  });
+  /* --------------------------------------------------
+     CALL END HANDLING
+     -------------------------------------------------- */
 
-  // When a user ends the call
   socket.on("end-call", (roomId) => {
     socket.to(roomId).emit("call-ended");
+    console.log(`📴 Call ended in room ${roomId}`);
   });
 
+  /* --------------------------------------------------
+     DISCONNECT HANDLING
+     -------------------------------------------------- */
+
+  socket.on("disconnect", () => {
+    console.log("❌ Disconnected:", socket.id);
+
+    // Optional improvement:
+    // could notify room peer here if tracking roomId per socket
+  });
 });
+
+/* --------------------------------------------------
+   START SERVER
+   -------------------------------------------------- */
 
 const PORT = process.env.PORT || 5000;
-server.listen(PORT, () => {
-  console.log("Server running on port", PORT);
-});
 
+server.listen(PORT, () => {
+  console.log(`🚀 Server running on port ${PORT}`);
+});

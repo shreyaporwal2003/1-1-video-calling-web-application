@@ -66,6 +66,7 @@ html, body, #root {
   z-index: 5;
 }
 
+
 /* ---------------- ROOM ID BAR ---------------- */
 
 .room-bar {
@@ -73,14 +74,14 @@ html, body, #root {
   top: 12px;
   left: 50%;
   transform: translateX(-50%);
-  background: #ffffff;
-  padding: 6px 12px;
+  background: rgba(249, 249, 249, 0.6);
+  padding: 8px 14px;
   border-radius: 8px;
-  font-size: 13px;
+  font-size: 14px;
   display: flex;
   gap: 8px;
   align-items: center;
-  border: 1px solid #d1d7db;
+  z-index: 10;
 }
 
 .room-bar button {
@@ -264,4 +265,42 @@ html, body, #root {
   .end-call {
     width: 56px;
   }
+}
+/* ---------------- CALL TIMER ---------------- */
+
+.call-timer {
+  position: absolute;
+  top: 70px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(32, 33, 36, 0.9);
+  padding: 6px 14px;
+  border-radius: 14px;
+  font-size: 14px;
+  color: #e8eaed;
+  font-weight: 500;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  z-index: 10; /* must be above video */
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+/* Video should fill container */
+.video-fill {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: inherit;
+}
+
+/* Avatar placeholder */
+.avatar {
+  width: 100%;
+  height: 100%;
+  background: #3c4043;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: inherit;
+  color: white;
+  font-size: 32px;
+  font-weight: 600;
 }
