@@ -8,10 +8,10 @@ export default function App() {
 
   // 🔹 CREATE A UNIQUE ROOM ID
   // This runs only when user clicks "Create Call"
-  const createRoom = () => {
-    const id = crypto.randomUUID(); // generates unique ID
-    setRoomId(id);
-  };
+ const createRoom = () => {
+  const id = Math.random().toString(36).substring(2, 8).toUpperCase();
+  setRoomId(id);
+};
 
   // 🔹 JOIN AN EXISTING ROOM USING SHARED ID
   const joinRoom = (id) => {
