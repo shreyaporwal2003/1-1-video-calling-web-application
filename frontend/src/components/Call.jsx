@@ -14,12 +14,14 @@ export default function Call({ roomId, onEnd }) {
   const [isLocalLarge, setIsLocalLarge] = useState(false);
   const [callSeconds, setCallSeconds] = useState(0);
 
+  /* ---------- FORMAT TIMER ---------- */
   const formatTime = (seconds) => {
     const mins = Math.floor(seconds / 60);
     const secs = seconds % 60;
     return `${String(mins).padStart(2, "0")}:${String(secs).padStart(2, "0")}`;
   };
 
+  /* ---------- CLEANUP ---------- */
   const cleanupMedia = () => {
     localStreamRef.current?.getTracks().forEach((t) => t.stop());
     pcRef.current?.close();
@@ -32,12 +34,14 @@ export default function Call({ roomId, onEnd }) {
     setCallSeconds(0);
   };
 
+  /* ---------- END CALL ---------- */
   const handleEndCall = () => {
     cleanupMedia();
     socket.emit("end-call", roomId);
     onEnd?.();
   };
 
+  /* ---------- TOGGLE MIC ---------- */
   const toggleMic = () => {
     const audioTrack = localStreamRef.current?.getAudioTracks()[0];
     if (!audioTrack) return;
@@ -45,6 +49,7 @@ export default function Call({ roomId, onEnd }) {
     setMicOn(audioTrack.enabled);
   };
 
+  /* ---------- TOGGLE CAMERA ---------- */
   const toggleCam = () => {
     const videoTrack = localStreamRef.current?.getVideoTracks()[0];
     if (!videoTrack) return;
@@ -72,19 +77,20 @@ export default function Call({ roomId, onEnd }) {
         localStreamRef.current = stream;
         localVideoRef.current.srcObject = stream;
 
-        /* ✅ STUN + TURN with TCP (important) */
+        /* ✅ FINAL TURN CONFIG */
         const pc = new RTCPeerConnection({
           iceServers: [
             { urls: "stun:stun.l.google.com:19302" },
+
             {
-              urls: "turn:openrelay.metered.ca:80?transport=tcp",
-              username: "openrelayproject",
-              credential: "openrelayproject",
+              urls: "turn:global.relay.metered.ca:80",
+              username: "69906ceab65cee46908a2e81",
+              credential: "metered",
             },
             {
-              urls: "turn:openrelay.metered.ca:443?transport=tcp",
-              username: "openrelayproject",
-              credential: "openrelayproject",
+              urls: "turns:global.relay.metered.ca:443?transport=tcp",
+              username: "69906ceab65cee46908a2e81",
+              credential: "metered",
             },
           ],
         });
@@ -93,7 +99,7 @@ export default function Call({ roomId, onEnd }) {
 
         stream.getTracks().forEach((track) => pc.addTrack(track, stream));
 
-        /* ✅ Remote stream attach + force play */
+        /* Remote stream attach */
         pc.ontrack = (e) => {
           const video = remoteVideoRef.current;
           if (video) {
@@ -103,12 +109,14 @@ export default function Call({ roomId, onEnd }) {
           setState("Connected");
         };
 
+        /* ICE send */
         pc.onicecandidate = (e) => {
           if (e.candidate) {
             socket.emit("ice-candidate", { roomId, candidate: e.candidate });
           }
         };
 
+        /* Connection state */
         pc.onconnectionstatechange = () => {
           const s = pc.connectionState;
 
@@ -167,14 +175,14 @@ export default function Call({ roomId, onEnd }) {
       setState("Connected");
     };
 
-    /* ✅ Safe ICE add */
+    /* Safe ICE add */
     const handleIce = async ({ candidate }) => {
       try {
         if (candidate && pcRef.current) {
           await pcRef.current.addIceCandidate(candidate);
         }
       } catch (err) {
-        console.error("ICE add error:", err);
+        console.error("ICE error:", err);
       }
     };
 
