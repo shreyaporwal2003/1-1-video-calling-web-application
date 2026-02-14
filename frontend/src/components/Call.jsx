@@ -14,14 +14,12 @@ export default function Call({ roomId, onEnd }) {
   const [isLocalLarge, setIsLocalLarge] = useState(false);
   const [callSeconds, setCallSeconds] = useState(0);
 
-  /* ---------- FORMAT TIMER ---------- */
   const formatTime = (seconds) => {
     const mins = Math.floor(seconds / 60);
     const secs = seconds % 60;
     return `${String(mins).padStart(2, "0")}:${String(secs).padStart(2, "0")}`;
   };
 
-  /* ---------- CLEANUP ---------- */
   const cleanupMedia = () => {
     localStreamRef.current?.getTracks().forEach((t) => t.stop());
     pcRef.current?.close();
@@ -34,34 +32,29 @@ export default function Call({ roomId, onEnd }) {
     setCallSeconds(0);
   };
 
-  /* ---------- END CALL ---------- */
   const handleEndCall = () => {
     cleanupMedia();
     socket.emit("end-call", roomId);
     onEnd?.();
   };
 
-  /* ---------- TOGGLE MIC ---------- */
   const toggleMic = () => {
-    const audioTrack = localStreamRef.current?.getAudioTracks()[0];
-    if (!audioTrack) return;
-    audioTrack.enabled = !audioTrack.enabled;
-    setMicOn(audioTrack.enabled);
+    const track = localStreamRef.current?.getAudioTracks()[0];
+    if (!track) return;
+    track.enabled = !track.enabled;
+    setMicOn(track.enabled);
   };
 
-  /* ---------- TOGGLE CAMERA ---------- */
   const toggleCam = () => {
-    const videoTrack = localStreamRef.current?.getVideoTracks()[0];
-    if (!videoTrack) return;
-    videoTrack.enabled = !videoTrack.enabled;
-    setCamOn(videoTrack.enabled);
+    const track = localStreamRef.current?.getVideoTracks()[0];
+    if (!track) return;
+    track.enabled = !track.enabled;
+    setCamOn(track.enabled);
   };
 
-  const swapVideos = () => setIsLocalLarge((prev) => !prev);
+  const swapVideos = () => setIsLocalLarge((p) => !p);
 
-  /*
-     START CALL
-  */
+  /* ---------- START CALL ---------- */
   useEffect(() => {
     let isMounted = true;
 
@@ -77,29 +70,15 @@ export default function Call({ roomId, onEnd }) {
         localStreamRef.current = stream;
         localVideoRef.current.srcObject = stream;
 
-        /* ✅ FINAL TURN CONFIG */
+        /* ✅ STUN ONLY (simple demo) */
         const pc = new RTCPeerConnection({
-          iceServers: [
-            { urls: "stun:stun.l.google.com:19302" },
-
-            {
-              urls: "turn:global.relay.metered.ca:80",
-              username: "69906ceab65cee46908a2e81",
-              credential: "metered",
-            },
-            {
-              urls: "turns:global.relay.metered.ca:443?transport=tcp",
-              username: "69906ceab65cee46908a2e81",
-              credential: "metered",
-            },
-          ],
+          iceServers: [{ urls: "stun:stun.l.google.com:19302" }],
         });
 
         pcRef.current = pc;
 
-        stream.getTracks().forEach((track) => pc.addTrack(track, stream));
+        stream.getTracks().forEach((t) => pc.addTrack(t, stream));
 
-        /* Remote stream attach */
         pc.ontrack = (e) => {
           const video = remoteVideoRef.current;
           if (video) {
@@ -109,17 +88,14 @@ export default function Call({ roomId, onEnd }) {
           setState("Connected");
         };
 
-        /* ICE send */
         pc.onicecandidate = (e) => {
           if (e.candidate) {
             socket.emit("ice-candidate", { roomId, candidate: e.candidate });
           }
         };
 
-        /* Connection state */
         pc.onconnectionstatechange = () => {
           const s = pc.connectionState;
-
           if (s === "connected") setState("Connected");
           if (s === "disconnected" || s === "failed") setState("Connection lost");
         };
@@ -140,18 +116,14 @@ export default function Call({ roomId, onEnd }) {
     };
   }, [roomId]);
 
-  /*
-     SIGNALING
-  */
+  /* ---------- SIGNALING ---------- */
   useEffect(() => {
     const handlePeerJoined = async () => {
       if (!pcRef.current) return;
 
       setState("Connecting…");
-
       const offer = await pcRef.current.createOffer();
       await pcRef.current.setLocalDescription(offer);
-
       socket.emit("offer", { roomId, offer });
     };
 
@@ -159,30 +131,25 @@ export default function Call({ roomId, onEnd }) {
       if (!pcRef.current) return;
 
       setState("Connecting…");
-
       await pcRef.current.setRemoteDescription(offer);
-
       const answer = await pcRef.current.createAnswer();
       await pcRef.current.setLocalDescription(answer);
-
       socket.emit("answer", { roomId, answer });
     };
 
     const handleAnswer = async (answer) => {
       if (!pcRef.current) return;
-
       await pcRef.current.setRemoteDescription(answer);
       setState("Connected");
     };
 
-    /* Safe ICE add */
     const handleIce = async ({ candidate }) => {
       try {
         if (candidate && pcRef.current) {
           await pcRef.current.addIceCandidate(candidate);
         }
-      } catch (err) {
-        console.error("ICE error:", err);
+      } catch (e) {
+        console.error("ICE error:", e);
       }
     };
 
@@ -206,29 +173,20 @@ export default function Call({ roomId, onEnd }) {
     };
   }, [roomId]);
 
-  /*
-     TIMER
-  */
+  /* ---------- TIMER ---------- */
   useEffect(() => {
-    if (timerRef.current) {
-      clearInterval(timerRef.current);
-      timerRef.current = null;
-    }
+    if (timerRef.current) clearInterval(timerRef.current);
 
     if (state === "Connected") {
       timerRef.current = setInterval(() => {
-        setCallSeconds((prev) => prev + 1);
+        setCallSeconds((p) => p + 1);
       }, 1000);
     }
 
-    return () => {
-      if (timerRef.current) clearInterval(timerRef.current);
-    };
+    return () => timerRef.current && clearInterval(timerRef.current);
   }, [state]);
 
-  /*
-     UI
-  */
+  /* ---------- UI ---------- */
   return (
     <div className="call-container">
       <div className="room-bar">
