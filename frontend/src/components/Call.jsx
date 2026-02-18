@@ -7,6 +7,7 @@ export default function Call({ roomId, onEnd }) {
   const pcRef = useRef(null);
   const localStreamRef = useRef(null);
   const timerRef = useRef(null);
+  const reconnectTimerRef = useRef(null);
 
   const [state, setState] = useState("Initializing camera…");
   const [micOn, setMicOn] = useState(true);
@@ -24,11 +25,11 @@ export default function Call({ roomId, onEnd }) {
     localStreamRef.current?.getTracks().forEach((t) => t.stop());
     pcRef.current?.close();
 
-    if (timerRef.current) {
-      clearInterval(timerRef.current);
-      timerRef.current = null;
-    }
+    if (timerRef.current) clearInterval(timerRef.current);
+    if (reconnectTimerRef.current) clearTimeout(reconnectTimerRef.current);
 
+    timerRef.current = null;
+    reconnectTimerRef.current = null;
     setCallSeconds(0);
   };
 
@@ -70,9 +71,10 @@ export default function Call({ roomId, onEnd }) {
         localStreamRef.current = stream;
         localVideoRef.current.srcObject = stream;
 
-        /* ✅ STUN ONLY (simple demo) */
         const pc = new RTCPeerConnection({
-          iceServers: [{ urls: "stun:stun.l.google.com:19302" }],
+          iceServers: [
+            { urls: "stun:stun.l.google.com:19302" },
+          ],
         });
 
         pcRef.current = pc;
@@ -94,10 +96,37 @@ export default function Call({ roomId, onEnd }) {
           }
         };
 
-        pc.onconnectionstatechange = () => {
+        pc.onconnectionstatechange = async () => {
           const s = pc.connectionState;
-          if (s === "connected") setState("Connected");
-          if (s === "disconnected" || s === "failed") setState("Connection lost");
+
+          if (s === "connected") {
+            setState("Connected");
+            if (reconnectTimerRef.current) clearTimeout(reconnectTimerRef.current);
+          }
+
+          if (s === "disconnected") {
+            setState("Reconnecting…");
+
+            reconnectTimerRef.current = setTimeout(async () => {
+              if (pc.connectionState !== "connected") {
+                try {
+                  const offer = await pc.createOffer({ iceRestart: true });
+                  await pc.setLocalDescription(offer);
+                  socket.emit("offer", { roomId, offer });
+                } catch (err) {
+                  console.error("ICE restart failed", err);
+                }
+              }
+            }, 5000); // wait 5 sec before retry
+          }
+
+          if (s === "failed") {
+            setState("Connection failed. Ending call…");
+
+            reconnectTimerRef.current = setTimeout(() => {
+              handleEndCall();
+            }, 30000); // auto-end after 30 sec
+          }
         };
 
         setState("Waiting for other user…");
@@ -192,9 +221,7 @@ export default function Call({ roomId, onEnd }) {
       <div className="room-bar">
         <span>Room ID:</span>
         <code>{roomId}</code>
-        <button onClick={() => navigator.clipboard.writeText(roomId)}>
-          Copy
-        </button>
+        <button onClick={() => navigator.clipboard.writeText(roomId)}>Copy</button>
       </div>
 
       <div className="call-status">{state}</div>
