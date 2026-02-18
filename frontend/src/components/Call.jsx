@@ -7,7 +7,10 @@ export default function Call({ roomId, onEnd }) {
   const pcRef = useRef(null);
   const localStreamRef = useRef(null);
   const timerRef = useRef(null);
-  const reconnectTimerRef = useRef(null);
+
+  // 🔁 retry loop refs
+  const retryIntervalRef = useRef(null);
+  const retryStartTimeRef = useRef(null);
 
   const [state, setState] = useState("Initializing camera…");
   const [micOn, setMicOn] = useState(true);
@@ -15,10 +18,19 @@ export default function Call({ roomId, onEnd }) {
   const [isLocalLarge, setIsLocalLarge] = useState(false);
   const [callSeconds, setCallSeconds] = useState(0);
 
+  const MAX_RETRY_TIME = 30000; // total 30 sec retry window
+  const RETRY_INTERVAL = 5000; // retry every 5 sec
+
   const formatTime = (seconds) => {
     const mins = Math.floor(seconds / 60);
     const secs = seconds % 60;
     return `${String(mins).padStart(2, "0")}:${String(secs).padStart(2, "0")}`;
+  };
+
+  const stopRetryLoop = () => {
+    if (retryIntervalRef.current) clearInterval(retryIntervalRef.current);
+    retryIntervalRef.current = null;
+    retryStartTimeRef.current = null;
   };
 
   const cleanupMedia = () => {
@@ -26,10 +38,10 @@ export default function Call({ roomId, onEnd }) {
     pcRef.current?.close();
 
     if (timerRef.current) clearInterval(timerRef.current);
-    if (reconnectTimerRef.current) clearTimeout(reconnectTimerRef.current);
+
+    stopRetryLoop();
 
     timerRef.current = null;
-    reconnectTimerRef.current = null;
     setCallSeconds(0);
   };
 
@@ -72,9 +84,7 @@ export default function Call({ roomId, onEnd }) {
         localVideoRef.current.srcObject = stream;
 
         const pc = new RTCPeerConnection({
-          iceServers: [
-            { urls: "stun:stun.l.google.com:19302" },
-          ],
+          iceServers: [{ urls: "stun:stun.l.google.com:19302" }],
         });
 
         pcRef.current = pc;
@@ -101,14 +111,34 @@ export default function Call({ roomId, onEnd }) {
 
           if (s === "connected") {
             setState("Connected");
-            if (reconnectTimerRef.current) clearTimeout(reconnectTimerRef.current);
+            stopRetryLoop();
           }
 
           if (s === "disconnected") {
             setState("Reconnecting…");
 
-            reconnectTimerRef.current = setTimeout(async () => {
-              if (pc.connectionState !== "connected") {
+            // start retry loop once
+            if (!retryIntervalRef.current) {
+              retryStartTimeRef.current = Date.now();
+
+              retryIntervalRef.current = setInterval(async () => {
+                const elapsed = Date.now() - retryStartTimeRef.current;
+
+                // stop if reconnected
+                if (pc.connectionState === "connected") {
+                  stopRetryLoop();
+                  return;
+                }
+
+                // stop after 30 sec total
+                if (elapsed >= MAX_RETRY_TIME) {
+                  stopRetryLoop();
+                  setState("Connection failed. Ending call…");
+                  handleEndCall();
+                  return;
+                }
+
+                // retry ICE restart
                 try {
                   const offer = await pc.createOffer({ iceRestart: true });
                   await pc.setLocalDescription(offer);
@@ -116,16 +146,14 @@ export default function Call({ roomId, onEnd }) {
                 } catch (err) {
                   console.error("ICE restart failed", err);
                 }
-              }
-            }, 5000); // wait 5 sec before retry
+              }, RETRY_INTERVAL);
+            }
           }
 
           if (s === "failed") {
             setState("Connection failed. Ending call…");
-
-            reconnectTimerRef.current = setTimeout(() => {
-              handleEndCall();
-            }, 30000); // auto-end after 30 sec
+            stopRetryLoop();
+            handleEndCall();
           }
         };
 
