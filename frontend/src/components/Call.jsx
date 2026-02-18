@@ -18,8 +18,8 @@ export default function Call({ roomId, onEnd }) {
   const [isLocalLarge, setIsLocalLarge] = useState(false);
   const [callSeconds, setCallSeconds] = useState(0);
 
-  const MAX_RETRY_TIME = 30000; // total 30 sec retry window
-  const RETRY_INTERVAL = 5000; // retry every 5 sec
+  const MAX_RETRY_TIME = 30000;
+  const RETRY_INTERVAL = 5000;
 
   const formatTime = (seconds) => {
     const mins = Math.floor(seconds / 60);
@@ -47,7 +47,7 @@ export default function Call({ roomId, onEnd }) {
 
   const handleEndCall = () => {
     cleanupMedia();
-    socket.emit("end-call", roomId);
+    socket.emit("end-call", roomId); // ✅ emit ONLY on manual end
     onEnd?.();
   };
 
@@ -117,28 +117,26 @@ export default function Call({ roomId, onEnd }) {
           if (s === "disconnected") {
             setState("Reconnecting…");
 
-            // start retry loop once
             if (!retryIntervalRef.current) {
               retryStartTimeRef.current = Date.now();
 
               retryIntervalRef.current = setInterval(async () => {
                 const elapsed = Date.now() - retryStartTimeRef.current;
 
-                // stop if reconnected
                 if (pc.connectionState === "connected") {
                   stopRetryLoop();
                   return;
                 }
 
-                // stop after 30 sec total
                 if (elapsed >= MAX_RETRY_TIME) {
                   stopRetryLoop();
-                  setState("Connection failed. Ending call…");
-                  handleEndCall();
+                  setState("Connection lost"); // ✅ CHANGED message
+
+                  cleanupMedia(); // ✅ CHANGED: local cleanup only
+                  onEnd?.();      // ✅ CHANGED: exit UI WITHOUT emitting end-call
                   return;
                 }
 
-                // retry ICE restart
                 try {
                   const offer = await pc.createOffer({ iceRestart: true });
                   await pc.setLocalDescription(offer);
@@ -151,9 +149,11 @@ export default function Call({ roomId, onEnd }) {
           }
 
           if (s === "failed") {
-            setState("Connection failed. Ending call…");
+            setState("Connection lost"); // ✅ CHANGED wording
             stopRetryLoop();
-            handleEndCall();
+
+            cleanupMedia(); // ✅ CHANGED: no end-call emit
+            onEnd?.();      // ✅ CHANGED
           }
         };
 
@@ -212,7 +212,8 @@ export default function Call({ roomId, onEnd }) {
 
     const handleCallEnded = () => {
       alert("The other user ended the call");
-      handleEndCall();
+      cleanupMedia(); // ✅ CHANGED: avoid re-emitting end-call
+      onEnd?.();      // ✅ CHANGED
     };
 
     socket.on("peer-joined", handlePeerJoined);
