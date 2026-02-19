@@ -25,6 +25,7 @@ const Login = () => {
                             className="room-input"
                             value={username}
                             onChange={(e) => setUsername(e.target.value)}
+                            autoComplete="username"
                         />
                     </div>
                     <div>
