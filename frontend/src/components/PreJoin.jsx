@@ -1,10 +1,13 @@
 import { useEffect, useRef, useState } from "react";
+import { useAuthContext } from "../context/AuthContext";
 
 export default function PreJoin({ onCreate, onJoin }) {
   const videoRef = useRef(null);
   const streamRef = useRef(null);
+  const { authUser } = useAuthContext();
 
   const [roomId, setRoomId] = useState("");
+  const [name, setName] = useState(authUser?.fullName || ""); // ✅ Pre-fill name
   const [micOn, setMicOn] = useState(true);
   const [camOn, setCamOn] = useState(true);
 
@@ -49,19 +52,27 @@ export default function PreJoin({ onCreate, onJoin }) {
   // 🔹 Join existing room
   const handleJoin = () => {
     streamRef.current?.getTracks().forEach(t => t.stop());
-    onJoin(roomId.trim());
+    onJoin({ roomId: roomId.trim(), name: name.trim() }); // ✅ send name
   };
 
   // 🔹 Create new room
   const handleCreate = () => {
     streamRef.current?.getTracks().forEach(t => t.stop());
-    onCreate();
+    onCreate(name.trim()); // ✅ send name
   };
 
   return (
     <div className="prejoin-container">
       <div className="prejoin-card">
         <h3>Video Call</h3>
+
+        {/* ✅ ADDED NAME INPUT (UI kept simple) */}
+        <input
+          className="room-input"
+          placeholder="Enter Your Name"
+          value={name}
+          onChange={e => setName(e.target.value)}
+        />
 
         {/* Camera preview */}
         <video
@@ -87,6 +98,7 @@ export default function PreJoin({ onCreate, onJoin }) {
           className="join-btn"
           style={{ marginBottom: "12px" }}
           onClick={handleCreate}
+          disabled={!name.trim()} // ✅ require name
         >
           Create Call
         </button>
@@ -103,7 +115,7 @@ export default function PreJoin({ onCreate, onJoin }) {
 
         <button
           className="join-btn"
-          disabled={!roomId.trim()}
+          disabled={!roomId.trim() || !name.trim()} // ✅ require name + room
           onClick={handleJoin}
         >
           Join Call

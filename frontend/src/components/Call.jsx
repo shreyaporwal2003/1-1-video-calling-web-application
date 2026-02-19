@@ -1,7 +1,9 @@
 import { useEffect, useRef, useState } from "react";
 import socket from "../socket";
+import Chat from "./Chat";
+import { MdChat } from "react-icons/md";
 
-export default function Call({ roomId, onEnd }) {
+export default function Call({ roomId, name, onEnd }) {
   const localVideoRef = useRef(null);
   const remoteVideoRef = useRef(null);
   const pcRef = useRef(null);
@@ -17,9 +19,30 @@ export default function Call({ roomId, onEnd }) {
   const [camOn, setCamOn] = useState(true);
   const [isLocalLarge, setIsLocalLarge] = useState(false);
   const [callSeconds, setCallSeconds] = useState(0);
+  const [showChat, setShowChat] = useState(false);
+  const [messages, setMessages] = useState([]);
 
   const MAX_RETRY_TIME = 30000;
   const RETRY_INTERVAL = 5000;
+
+  /* ---------- helpers ---------- */
+  
+  const sendMessage = (text) => {
+    socket.emit("send-message", { roomId, message: text, senderName: name });
+    setMessages((prev) => [...prev, { text, senderName: "You", isLocal: true }]);
+  };
+
+  useEffect(() => {
+    const handleReceiveMessage = ({ message, senderName }) => {
+      setMessages((prev) => [...prev, { text: message, senderName, isLocal: false }]);
+    };
+
+    socket.on("receive-message", handleReceiveMessage);
+
+    return () => {
+      socket.off("receive-message", handleReceiveMessage);
+    };
+  }, []);
 
   const formatTime = (seconds) => {
     const mins = Math.floor(seconds / 60);
@@ -27,6 +50,7 @@ export default function Call({ roomId, onEnd }) {
     return `${String(mins).padStart(2, "0")}:${String(secs).padStart(2, "0")}`;
   };
 
+  // ... (rest of helpers like stopRetryLoop, cleanupMedia, handleEndCall, etc. remain unchanged)
   const stopRetryLoop = () => {
     if (retryIntervalRef.current) clearInterval(retryIntervalRef.current);
     retryIntervalRef.current = null;
@@ -43,11 +67,12 @@ export default function Call({ roomId, onEnd }) {
 
     timerRef.current = null;
     setCallSeconds(0);
+    setMessages([]); // Clear messages on end
   };
 
   const handleEndCall = () => {
     cleanupMedia();
-    socket.emit("end-call", roomId); // ✅ emit ONLY on manual end
+    socket.emit("end-call", roomId); // only manual end
     onEnd?.();
   };
 
@@ -68,6 +93,8 @@ export default function Call({ roomId, onEnd }) {
   const swapVideos = () => setIsLocalLarge((p) => !p);
 
   /* ---------- START CALL ---------- */
+  
+  // ... (startCall useEffect remains unchanged) ...
   useEffect(() => {
     let isMounted = true;
 
@@ -130,10 +157,11 @@ export default function Call({ roomId, onEnd }) {
 
                 if (elapsed >= MAX_RETRY_TIME) {
                   stopRetryLoop();
-                  setState("Connection lost"); // ✅ CHANGED message
+                  setState("Connection lost");
 
-                  cleanupMedia(); // ✅ CHANGED: local cleanup only
-                  onEnd?.();      // ✅ CHANGED: exit UI WITHOUT emitting end-call
+                  // local close only (no end-call emit)
+                  cleanupMedia();
+                  onEnd?.();
                   return;
                 }
 
@@ -149,16 +177,17 @@ export default function Call({ roomId, onEnd }) {
           }
 
           if (s === "failed") {
-            setState("Connection lost"); // ✅ CHANGED wording
+            setState("Connection lost");
             stopRetryLoop();
-
-            cleanupMedia(); // ✅ CHANGED: no end-call emit
-            onEnd?.();      // ✅ CHANGED
+            cleanupMedia();
+            onEnd?.();
           }
         };
 
         setState("Waiting for other user…");
-        socket.emit("join-room", roomId);
+
+        // 🔹 Google-Meet style join with name
+        socket.emit("join-room", { roomId, name });
       } catch (err) {
         console.error(err);
         setState("Camera/Microphone permission denied");
@@ -171,9 +200,11 @@ export default function Call({ roomId, onEnd }) {
       isMounted = false;
       cleanupMedia();
     };
-  }, [roomId]);
+  }, [roomId, name, onEnd]);
+
 
   /* ---------- SIGNALING ---------- */
+  // ... (signaling useEffect remains unchanged) ...
   useEffect(() => {
     const handlePeerJoined = async () => {
       if (!pcRef.current) return;
@@ -210,16 +241,23 @@ export default function Call({ roomId, onEnd }) {
       }
     };
 
+    const handlePeerLeft = () => {
+      alert("Other user left the call");
+      cleanupMedia();
+      onEnd?.();
+    };
+
     const handleCallEnded = () => {
       alert("The other user ended the call");
-      cleanupMedia(); // ✅ CHANGED: avoid re-emitting end-call
-      onEnd?.();      // ✅ CHANGED
+      cleanupMedia();
+      onEnd?.();
     };
 
     socket.on("peer-joined", handlePeerJoined);
     socket.on("offer", handleOffer);
     socket.on("answer", handleAnswer);
     socket.on("ice-candidate", handleIce);
+    socket.on("peer-left", handlePeerLeft);
     socket.on("call-ended", handleCallEnded);
 
     return () => {
@@ -227,11 +265,14 @@ export default function Call({ roomId, onEnd }) {
       socket.off("offer", handleOffer);
       socket.off("answer", handleAnswer);
       socket.off("ice-candidate", handleIce);
+      socket.off("peer-left", handlePeerLeft);
       socket.off("call-ended", handleCallEnded);
     };
-  }, [roomId]);
+  }, [roomId, onEnd]);
+
 
   /* ---------- TIMER ---------- */
+  // ... (timer useEffect remains unchanged) ...
   useEffect(() => {
     if (timerRef.current) clearInterval(timerRef.current);
 
@@ -244,7 +285,9 @@ export default function Call({ roomId, onEnd }) {
     return () => timerRef.current && clearInterval(timerRef.current);
   }, [state]);
 
+
   /* ---------- UI ---------- */
+
   return (
     <div className="call-container">
       <div className="room-bar">
@@ -257,6 +300,14 @@ export default function Call({ roomId, onEnd }) {
 
       {state === "Connected" && (
         <div className="call-timer">{formatTime(callSeconds)}</div>
+      )}
+
+      {showChat && (
+        <Chat
+            messages={messages}
+            onSendMessage={sendMessage}
+            onClose={() => setShowChat(false)}
+        />
       )}
 
       <video
@@ -279,6 +330,9 @@ export default function Call({ roomId, onEnd }) {
       <div className="controls">
         <button onClick={toggleMic}>{micOn ? "🔊" : "🔇"}</button>
         <button onClick={toggleCam}>{camOn ? "📸" : "📸 off"}</button>
+        <button onClick={() => setShowChat(!showChat)} style={{ position: "relative" }}>
+             <MdChat size={20} />
+        </button>
         <button className="end-call" onClick={handleEndCall}>
           End
         </button>

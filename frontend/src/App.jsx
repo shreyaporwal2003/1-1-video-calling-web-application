@@ -1,38 +1,21 @@
-import { useState } from "react";
-import PreJoin from "./components/PreJoin";
-import Call from "./components/Call";
+import { Navigate, Route, Routes } from "react-router-dom";
+import { Toaster } from "react-hot-toast";
+import Home from "./pages/Home";
+import Login from "./pages/Login";
+import SignUp from "./pages/SignUp";
+import { useAuthContext } from "./context/AuthContext";
+import "./chat.css";
 
 export default function App() {
-  // Stores the current room ID
-  const [roomId, setRoomId] = useState(null);
-
-  // 🔹 CREATE A UNIQUE ROOM ID
-  // This runs only when user clicks "Create Call"
- const createRoom = () => {
-  const id = Math.random().toString(36).substring(2, 8).toUpperCase();
-  setRoomId(id);
-};
-
-  // 🔹 JOIN AN EXISTING ROOM USING SHARED ID
-  const joinRoom = (id) => {
-    setRoomId(id);
-  };
-
-  return (
-    <>
-      {roomId ? (
-        // If roomId exists → enter the call
-        <Call
-          roomId={roomId}
-          onEnd={() => setRoomId(null)}
-        />
-      ) : (
-        // Otherwise → show pre-join screen
-        <PreJoin
-          onCreate={createRoom}
-          onJoin={joinRoom}
-        />
-      )}
-    </>
-  );
+	const { authUser } = useAuthContext();
+	return (
+		<div className="p-4 h-screen flex items-center justify-center">
+			<Routes>
+				<Route path="/" element={authUser ? <Home /> : <Navigate to={"/login"} />} />
+				<Route path="/login" element={authUser ? <Navigate to="/" /> : <Login />} />
+				<Route path="/signup" element={authUser ? <Navigate to="/" /> : <SignUp />} />
+			</Routes>
+			<Toaster />
+		</div>
+	);
 }

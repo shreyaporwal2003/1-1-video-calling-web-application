@@ -7,3 +7,13 @@ const socket = io(import.meta.env.VITE_BACKEND_URL, {
 });
 
 export default socket;
+
+// import { io } from "socket.io-client";
+
+// // LOCAL backend URL
+// const socket = io("http://localhost:5000", {
+//   transports: ["websocket"], // faster + avoids polling issues
+//   withCredentials: true,
+// });
+
+// export default socket;
