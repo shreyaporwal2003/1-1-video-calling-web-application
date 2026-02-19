@@ -14,7 +14,10 @@ const PORT = process.env.PORT || 5000;
 
 app.use(express.json()); // to parse the incoming requests with JSON payloads (from req.body)
 app.use(cookieParser());
-app.use(cors());
+app.use(cors({
+  origin: process.env.FRONTEND_URL,
+  credentials: true,
+}));
 
 app.use("/api/auth", authRoutes);
 
@@ -24,8 +27,9 @@ const setupSocket = require("./socket/socket.handler.js");
 
 const io = new Server(server, {
   cors: {
-    origin: "*",
+    origin: process.env.FRONTEND_URL,
     methods: ["GET", "POST"],
+    credentials: true,
   },
 });
 

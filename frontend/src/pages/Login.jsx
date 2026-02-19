@@ -34,6 +34,7 @@ const Login = () => {
                             className="room-input"
                             value={password}
                             onChange={(e) => setPassword(e.target.value)}
+                            autoComplete="current-password"
                         />
                     </div>
                     <Link to="/signup" style={{ display: "block", marginBottom: "15px", fontSize: "14px", color: "#007bff" }}>

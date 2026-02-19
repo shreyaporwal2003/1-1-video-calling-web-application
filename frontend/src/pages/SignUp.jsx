@@ -56,6 +56,7 @@ const SignUp = () => {
                             className="room-input"
 							value={inputs.password}
 							onChange={(e) => setInputs({ ...inputs, password: e.target.value })}
+                            autoComplete="new-password"
 						/>
 					</div>
 
@@ -66,6 +67,7 @@ const SignUp = () => {
 							className="room-input"
 							value={inputs.confirmPassword}
 							onChange={(e) => setInputs({ ...inputs, confirmPassword: e.target.value })}
+                            autoComplete="new-password"
 						/>
 					</div>
 
